@@ -4,7 +4,7 @@
 
 Capacity service requires kubernetes and kubescaler configuration files.
 
-In case of deploing Capacity to the cluster, kubeconfig file is optional, but it needs a properly configured serviceaccount for RBAC. Also, kubescaler config sould be stored as ConfigMap with `kubescaler.conf` key. ([reason](https://github.com/kubernetes/kubernetes/issues/60814))
+In case of deploing Capacity to the cluster, kubeconfig file is optional, but it needs a properly configured serviceaccount for RBAC. Also, kubescaler config sould be stored as ConfigMap with `kubescaler.conf` key. ([why](https://github.com/kubernetes/kubernetes/issues/60814))
 
 ### examples
 
@@ -158,36 +158,15 @@ EOF
 ```
 cat <<EOF | kubectl create -f -
 ---
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: capacity-configmap-updater
-rules:
-- apiGroups: [""]
-  resources: ["configmaps"]
-  resourceNames: ["capacity-config"]
-  verbs: ["get", "patch"]
----
-# for updating kubescaler config on configmap
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: capacity-configmap
-  namespace: default
-subjects:
-- kind: ServiceAccount
-  name: capacity-service
-  namespace: default
-roleRef:
-  kind: Role
-  name: capacity-configmap-updater
-  apiGroup: rbac.authorization.k8s.io
----
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: capacity-nodepod-permissions
 rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["capacity-config", "capacity"]
+  verbs: ["get", "patch"]
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["*"]

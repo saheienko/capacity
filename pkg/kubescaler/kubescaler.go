@@ -26,6 +26,9 @@ import (
 
 const (
 	DefaultConfigFilepath = "/etc/kubescaler.conf"
+
+	DefaultConfigMapName   = "capacity"
+	DefaultConfigMapNamespace  = "kube-system"
 	DefaultConfigMapKey   = "kubescaler.conf"
 
 	// How old the oldest unschedulable pod should be before starting scale up.
@@ -404,40 +407,42 @@ func isNewNode(node *corev1.Node, currentTime time.Time, newNodeTimeBuffer int) 
 // Sources priority order:
 //   - file on the provided path;
 //   - configmap;
-//   - file on the default path.
+//   - file on the default path;
+//   - default configmap: kube-system/capacity
 //
 // TODO: pass only configfile options
 func getConfigFile(opts Options, cmGetter v1.ConfigMapsGetter) (persistentfile.Interface, error) {
-	// try to use a file on provided path
-	f, err := persistentfile.New(persistentfile.Config{
-		Type: persistentfile.FSFile,
-		Path: opts.ConfigFile,
-		Perm: os.FileMode(0644),
-	})
-	if err == nil {
-		return f, nil
-	}
-
-	// try to setup a configMap file
-	f, err = persistentfile.New(persistentfile.Config{
-		Type:               persistentfile.ConfigMapFile,
-		ConfigMapName:      opts.ConfigMapName,
-		ConfigMapNamespace: opts.ConfigMapNamespace,
-		Key:                DefaultConfigMapKey,
-		ConfigMapClient:    cmGetter,
-	})
-	if err == nil {
-		return f, nil
-	}
-
-	// try to use a file on default path
-	f, err = persistentfile.New(persistentfile.Config{
-		Type: persistentfile.FSFile,
-		Path: DefaultConfigFilepath,
-		Perm: os.FileMode(0644),
-	})
-	if err == nil {
-		return f, nil
+	for _, cfg := range []persistentfile.Config{
+		{
+			Type: persistentfile.FSFile,
+			Path: opts.ConfigFile,
+			Perm: os.FileMode(0644),
+		},
+		{
+			Type:               persistentfile.ConfigMapFile,
+			ConfigMapName:      opts.ConfigMapName,
+			ConfigMapNamespace: opts.ConfigMapNamespace,
+			Key:                DefaultConfigMapKey,
+			ConfigMapClient:    cmGetter,
+		},
+		{
+			Type: persistentfile.FSFile,
+			Path: DefaultConfigFilepath,
+			Perm: os.FileMode(0644),
+		},
+		{
+			Type:               persistentfile.ConfigMapFile,
+			ConfigMapName:      DefaultConfigMapName,
+			ConfigMapNamespace: DefaultConfigMapNamespace,
+			Key:                DefaultConfigMapKey,
+			ConfigMapClient:    cmGetter,
+		},
+	}{
+		f, err := persistentfile.New(cfg)
+		if err == nil {
+			log.Infof("configuration file: %s", f.Info())
+			return f, nil
+		}
 	}
 
 	return nil, errors.New("config file/configmap not found")
