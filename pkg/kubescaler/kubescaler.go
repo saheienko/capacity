@@ -563,8 +563,6 @@ func buildUserdata(cfg api.Config) (string, error) {
 		return parse(userDataTpl, cfg.SupergiantV1Config)
 	case len(cfg.Userdata) > 0:
 		return cfg.Userdata, nil
-	case len(cfg.UserdataTpl) > 0:
-		return parse(cfg.UserdataTpl, cfg.UserdataVars)
 	}
 
 	return "", errors.New("userdata configuration not found")

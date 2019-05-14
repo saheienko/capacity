@@ -3,16 +3,17 @@ package aws
 import (
 	"context"
 	"encoding/base64"
-	"github.com/supergiant/capacity/pkg/provider/aws/instancetypes"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/pkg/errors"
-	"github.com/supergiant/control/pkg/clouds/aws"
+	"github.com/supergiant/capacity/pkg/provider"
+	"github.com/supergiant/capacity/pkg/provider/aws/instancetypes"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/supergiant/capacity/pkg/provider"
+	"github.com/supergiant/control/pkg/clouds/aws"
 )
 
 // Provider name:
@@ -78,6 +79,10 @@ func New(clusterName string, config provider.Config) (*Provider, error) {
 		return nil, errors.Wrapf(err, "invalid %q volume size", config[VolSize])
 	}
 
+	if config[VolDeviceName] == "" {
+		config[VolDeviceName] = "/dev/sda1"
+	}
+
 	return &Provider{
 		clusterName: clusterName,
 		region:      region,
@@ -110,7 +115,7 @@ func (p *Provider) MachineTypes(_ context.Context) ([]*provider.MachineType, err
 
 	mTypes := make([]*provider.MachineType, 0, len(instTypes))
 	for _, vm := range instTypes {
-		mem, err := parseMemory(vm.MemoryGiB)
+		mem, err := parseGiB(vm.MemoryGiB)
 		if err != nil {
 			return nil, errors.Wrapf(err, "memory: parse %s", vm.MemoryGiB)
 		}
@@ -172,6 +177,7 @@ func (p *Provider) CreateMachine(ctx context.Context, name, mtype, clusterRole, 
 		EBSOptimized:     p.instConf.EBSOptimized,
 		Tags:             p.instConf.Tags,
 		UsedData:         base64.StdEncoding.EncodeToString([]byte(userData)),
+		HasPublicAddr:    true,
 	})
 	if err != nil {
 		return nil, err
@@ -203,6 +209,10 @@ func normalizeMemory(memory string) string {
 
 func parseMemory(memory string) (resource.Quantity, error) {
 	return resource.ParseQuantity(normalizeMemory(memory))
+}
+
+func parseGiB(in string) (resource.Quantity, error) {
+	return resource.ParseQuantity(fmt.Sprintf("%sGi", in))
 }
 
 func parseVCPU(vcpu string) (resource.Quantity, error) {

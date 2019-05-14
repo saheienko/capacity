@@ -144,10 +144,6 @@ func writeExampleConfig(file persistentfile.Interface) error {
 		WorkersCountMin: 1,
 		Paused:          BoolPtr(true),
 		Userdata:        "REPLACE_IT",
-		UserdataTpl:     "REPLACE_IT",
-		UserdataVars: map[string]string{
-			"REPLACE_IT": "REPLACE_IT",
-		},
 		SupergiantV1Config: &api.SupergiantV1UserdataVars{
 			MasterPrivateAddr: "REPLACE_IT",
 			KubeAPIHost:       "REPLACE_IT",

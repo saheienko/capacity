@@ -9,14 +9,13 @@ import (
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/supergiant/capacity/pkg/api"
 	"github.com/supergiant/capacity/pkg/kubescaler/workers/fake"
 	"github.com/supergiant/capacity/pkg/persistentfile/file"
 	"github.com/supergiant/capacity/pkg/provider"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -226,7 +225,7 @@ func TestKubescalerScaleUp(t *testing.T) {
 
 }
 
-func TestFilterIgnoringPos(t *testing.T) {
+func TestFilterPods(t *testing.T) {
 	pods := []*corev1.Pod{
 		&podNew,
 		&podStandAlone,
@@ -238,8 +237,8 @@ func TestFilterIgnoringPos(t *testing.T) {
 	allowedMachines := []*provider.MachineType{&allowedMachine}
 	expectedRes := []*corev1.Pod{&podWithRequests}
 
-	res := filterIgnoringPods(pods, allowedMachines, currentTime)
-	require.Equal(t, expectedRes, res)
+	toScale, _ := filterPods(pods, allowedMachines, currentTime)
+	require.Equal(t, expectedRes, toScale)
 }
 
 func TestHasMachineFor(t *testing.T) {
