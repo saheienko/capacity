@@ -31,6 +31,9 @@ const (
 
 	// How old the oldest unschedulable pod should be before starting scale up.
 	unschedulablePodTimeBuffer = 2 * time.Second
+
+	// defaultNodeTimeBuffer is a time in seconds to wait for node is in Ready state.
+	defaultNodeTimeBuffer = 60
 )
 
 var (
@@ -385,6 +388,9 @@ func getEmptyNodes(nodes []*corev1.Node, pods []*corev1.Pod) []*corev1.Node {
 }
 
 func getNewNodes(nodes []*corev1.Node, currentTime time.Time, newNodeTimeBuffer int) []*corev1.Node {
+	if newNodeTimeBuffer == 0 {
+		newNodeTimeBuffer = defaultNodeTimeBuffer
+	}
 	newNodes := make([]*corev1.Node, 0)
 	for _, node := range nodes {
 		if isNewNode(node, currentTime, newNodeTimeBuffer) {
